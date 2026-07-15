@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Dashboard</title>
+  <style>
+    /* Basic page colors. */
+    :root {
+      --page: #eef2f7;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #5b6472;
+      --border: #c7d0df;
+      --primary: #1f4f8f;
+      --danger: #a61b1b;
+      --warning: #92400e;
+      --success: #166534;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      background: var(--page);
+      color: var(--text);
+    }
+
+    /* Top title area. */
+    .page-header {
+      background: var(--primary);
+      color: white;
+      padding: 22px;
+    }
+
+    .page-header p {
+      color: #dbeafe;
+      margin-bottom: 0;
+    }
+
+    .page-shell {
+      max-width: 1040px;
+      margin: 22px auto;
+      padding: 0 18px;
+    }
+
+    button,
+    select {
+      margin-top: 8px;
+      margin-right: 6px;
+      padding: 8px 11px;
+      border: 1px solid var(--border);
+      background: white;
+      cursor: pointer;
+    }
+
+    #refreshButton {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Count boxes and main layout. */
+    .counts,
+    .layout {
+      display: grid;
+      gap: 16px;
+    }
+
+    .counts {
+      grid-template-columns: repeat(3, 1fr);
+      margin-top: 16px;
+    }
+
+    .layout {
+      grid-template-columns: minmax(0, 1fr) 320px;
+      margin-top: 20px;
+    }
+
+    /* Main content boxes. */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 16px;
+    }
+
+    .report,
+    .detail,
+    .count {
+      background: white;
+      border: 1px solid var(--border);
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .report {
+      cursor: pointer;
+    }
+
+    .selected {
+      border-color: var(--primary);
+      border-width: 2px;
+    }
+
+    /* Status and priority colors. */
+    .status-pending,
+    .priority-high {
+      color: var(--danger);
+      font-weight: bold;
+    }
+
+    .status-progress,
+    .priority-medium {
+      color: var(--warning);
+      font-weight: bold;
+    }
+
+    .status-completed,
+    .priority-low {
+      color: var(--success);
+      font-weight: bold;
+    }
+
+    small {
+      display: block;
+      font-weight: bold;
+      color: var(--muted);
+    }
+
+    @media (max-width: 760px) {
+      .counts,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <h1>Teacher Dashboard</h1>
+    <p>Use this page to review, update, and delete student reports.</p>
+  </header>
+
+  <div class="page-shell">
+    <button id="refreshButton" type="button">Refresh Reports</button>
+
+    <div class="counts">
+      <div class="count"><strong id="pendingCount">0</strong> Pending</div>
+      <div class="count"><strong id="progressCount">0</strong> In Progress</div>
+      <div class="count"><strong id="completedCount">0</strong> Completed</div>
+    </div>
+
+    <div class="layout">
+      <main class="panel">
+        <h2>Reports</h2>
+        <div id="reportList"></div>
+      </main>
+
+      <aside class="panel">
+        <h2>Report Details</h2>
+        <div id="detailPanel">Select a report to view details.</div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // Get page elements.
+    const reportList = document.getElementById("reportList");
+    const detailPanel = document.getElementById("detailPanel");
+    const refreshButton = document.getElementById("refreshButton");
+
+    // Read teacher key from the URL.
+    const teacherKey = new URLSearchParams(window.location.search).get("key") || prompt("Teacher key");
+
+    // Store reports loaded from the server.
+    let reports = [];
+    let selectedReportId = null;
+
+    // Add teacher key to API requests.
+    function apiUrl(path) {
+      return `${path}?key=${encodeURIComponent(teacherKey || "")}`;
+    }
+
+    // Read the server error message.
+    async function getErrorMessage(response, fallbackMessage) {
+      try {
+        const data = await response.json();
+        return data.error || fallbackMessage;
+      } catch (error) {
+        return fallbackMessage;
+      }
+    }
+
+    // Make text safe before using innerHTML.
+    function escapeText(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    // Update the status count boxes.
+    function updateCounts() {
+      document.getElementById("pendingCount").textContent = reports.filter(report => report.status === "Pending").length;
+      document.getElementById("progressCount").textContent = reports.filter(report => report.status === "In Progress").length;
+      document.getElementById("completedCount").textContent = reports.filter(report => report.status === "Completed").length;
+    }
+
+    // Choose CSS class for status text.
+    function getStatusClass(status) {
+      if (status === "Pending") return "status-pending";
+      if (status === "In Progress") return "status-progress";
+      return "status-completed";
+    }
+
+    // Choose CSS class for priority text.
+    function getPriorityClass(priority) {
+      if (priority === "Low") return "priority-low";
+      if (priority === "Medium") return "priority-medium";
+      return "priority-high";
+    }
+
+    // Build report cards from loaded data.
+    function renderReports() {
+      reportList.innerHTML = "";
+
+      if (reports.length === 0) {
+        reportList.textContent = "No reports found.";
+        updateCounts();
+        return;
+      }
+
+      reports.forEach(function (report) {
+        const card = document.createElement("div");
+        card.className = "report";
+        if (report.id === selectedReportId) {
+          card.classList.add("selected");
+        }
+
+        card.innerHTML = `
+          <strong>#${report.id} ${escapeText(report.issueType)}</strong><br>
+          ${escapeText(report.location)} |
+          <span class="${getPriorityClass(report.priority)}">${escapeText(report.priority)}</span> |
+          <span class="${getStatusClass(report.status)}">${escapeText(report.status)}</span>
+        `;
+
+        card.addEventListener("click", function () {
+          selectedReportId = report.id;
+          renderReports();
+          renderDetails(report.id);
+        });
+
+        reportList.appendChild(card);
+      });
+
+      updateCounts();
+    }
+
+    // Show details for one report.
+    function renderDetails(reportId) {
+      const report = reports.find(item => item.id === reportId);
+      if (!report) return;
+
+      detailPanel.innerHTML = `
+        <div class="detail"><small>Report ID</small>#${report.id}</div>
+        <div class="detail"><small>Student</small>${escapeText(report.studentName)}</div>
+        <div class="detail"><small>Location</small>${escapeText(report.location)}</div>
+        <div class="detail"><small>Issue Type</small>${escapeText(report.issueType)}</div>
+        <div class="detail"><small>Priority</small><span class="${getPriorityClass(report.priority)}">${escapeText(report.priority)}</span></div>
+        <div class="detail"><small>Status</small><span class="${getStatusClass(report.status)}">${escapeText(report.status)}</span></div>
+        <div class="detail"><small>Description</small>${escapeText(report.description)}</div>
+        <div class="detail"><small>Created</small>${escapeText(report.createdAt)}</div>
+        <button type="button" onclick="updateStatus(${report.id}, 'Pending')">Mark Pending</button>
+        <button type="button" onclick="updateStatus(${report.id}, 'In Progress')">Mark In Progress</button>
+        <button type="button" onclick="updateStatus(${report.id}, 'Completed')">Mark Completed</button>
+        <button type="button" onclick="deleteReport(${report.id})">Delete Report</button>
+      `;
+    }
+
+    // Load reports from the database API.
+    async function loadReports(reportIdToShow = selectedReportId) {
+      try {
+        const response = await fetch(apiUrl("/api/reports"));
+        if (!response.ok) {
+          throw new Error(await getErrorMessage(response, "Could not load reports."));
+        }
+
+        reports = await response.json();
+        const selectedReport = reports.find(report => report.id === reportIdToShow);
+        selectedReportId = selectedReport ? reportIdToShow : null;
+        renderReports();
+
+        if (selectedReport) {
+          renderDetails(reportIdToShow);
+        } else {
+          detailPanel.textContent = "Select a report to view details.";
+        }
+      } catch (error) {
+        reportList.textContent = error.message;
+      }
+    }
+
+    // Change report status in the database.
+    async function updateStatus(reportId, status) {
+      const response = await fetch(apiUrl(`/api/reports/${reportId}/status`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ status })
+      });
+
+      if (response.ok) {
+        await loadReports(reportId);
+      } else {
+        detailPanel.textContent = await getErrorMessage(response, "Could not update report status.");
+      }
+    }
+
+    // Delete one report from the database.
+    async function deleteReport(reportId) {
+      const response = await fetch(apiUrl(`/api/reports/${reportId}`), {
+        method: "DELETE"
+      });
+
+      if (response.ok) {
+        selectedReportId = null;
+        detailPanel.textContent = "Select a report to view details.";
+        await loadReports();
+      } else {
+        detailPanel.textContent = await getErrorMessage(response, "Could not delete report.");
+      }
+    }
+
+    // Reload reports when teacher clicks refresh.
+    refreshButton.addEventListener("click", function () {
+      loadReports();
+    });
+
+    // Load reports when the page opens.
+    loadReports();
+  </script>
+</body>
+</html>

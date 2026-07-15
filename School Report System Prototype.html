@@ -3,116 +3,122 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>School Report System Prototype</title>
+  <title>Student Report Page</title>
   <style>
-    /* 第一版原型只保留基础排版，不做额外视觉装饰。 */
+    /* Basic page colors. */
+    :root {
+      --page: #eef2f7;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #5b6472;
+      --border: #c7d0df;
+      --primary: #1f4f8f;
+      --danger: #a61b1b;
+      --success: #166534;
+    }
+
     * {
       box-sizing: border-box;
     }
 
     body {
-      margin: 20px;
       font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      background: var(--page);
+      color: var(--text);
     }
 
-    header,
-    main,
-    section,
-    aside {
-      margin-bottom: 20px;
+    /* Top title area. */
+    .page-header {
+      background: var(--primary);
+      color: white;
+      padding: 22px;
+    }
+
+    .page-header p {
+      color: #dbeafe;
+      margin-bottom: 0;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 22px auto;
+      padding: 0 18px;
+    }
+
+    /* Main form box. */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 20px;
     }
 
     h1,
-    h2,
-    h3,
     p {
-      margin: 0;
+      margin-top: 0;
     }
 
-    h2,
-    h3,
-    .status-pill,
-    .hint,
-    .dashboard-top,
-    .report-list,
-    .detail-grid,
-    .detail-actions,
-    .timeline {
-      margin-top: 12px;
-    }
-
-    label {
+    label,
+    input,
+    select,
+    textarea,
+    button {
       display: block;
-      margin-top: 12px;
+      margin-top: 10px;
     }
 
     input,
     select,
     textarea {
-      /* 限制表单宽度，避免输入框在大屏幕上过长。 */
-      display: block;
       width: 100%;
       max-width: 480px;
-      margin-top: 4px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      font-size: 15px;
     }
 
     textarea {
-      min-height: 80px;
-      resize: vertical;
+      min-height: 90px;
     }
 
     button {
-      margin-top: 8px;
-      margin-right: 6px;
-    }
-
-    .error-box,
-    .success-box {
-      display: none;
-      margin-top: 12px;
-    }
-
-    .stat,
-    .report-card,
-    .detail-item {
-      display: block;
-      margin-bottom: 10px;
-    }
-
-    .report-card {
+      padding: 9px 13px;
+      border: 1px solid var(--primary);
+      background: var(--primary);
+      color: white;
       cursor: pointer;
     }
 
-    .detail-item small {
-      display: block;
+    /* Form message area. */
+    .message {
+      display: none;
+      margin-top: 12px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      max-width: 480px;
     }
 
-    .meta,
-    .hint,
-    .detail-empty,
-    .timeline {
-      font-size: 14px;
+    #errorMessage {
+      color: var(--danger);
+    }
+
+    #successMessage {
+      color: var(--success);
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="header-inner">
-      <div class="title-block">
-        <h1>School Report System</h1>
-        <p>For reporting damaged or unsafe areas around school.</p>
-      </div>
-      <div class="status-pill">Prototype v1</div>
-    </div>
+  <header class="page-header">
+    <h1>Student Report Page</h1>
+    <p>Use this page to report damaged or unsafe school facilities.</p>
   </header>
 
   <main>
     <section class="panel">
-      <h2>Submit Report</h2>
-      <div id="errorBox" class="error-box">Please complete all required fields before submitting.</div>
-      <div id="successBox" class="success-box">Report added.</div>
+      <p id="errorMessage" class="message">Please complete all fields.</p>
+      <p id="successMessage" class="message">Report saved to the database.</p>
 
-      <!-- 用户在这里填写并提交新的设施问题报告。 -->
+      <!-- Student page only sends new reports. -->
       <form id="reportForm">
         <label for="studentName">Student name</label>
         <input id="studentName" type="text" placeholder="Example: Xukun Cai" />
@@ -153,8 +159,6 @@
           <option>Other</option>
         </select>
 
-
-
         <label for="priority">Priority</label>
         <select id="priority">
           <option value="">Select priority</option>
@@ -162,229 +166,81 @@
           <option>Medium</option>
           <option>High</option>
         </select>
-        <p class="hint">Use High only when the issue could be unsafe.</p>
 
         <label for="description">Description</label>
         <textarea id="description" placeholder="Example: A chair leg is loose in Y Block near Room Y12."></textarea>
 
-        <button class="btn btn-primary" type="submit">Submit Report</button>
+        <button type="submit">Submit Report</button>
       </form>
-    </section>
-
-    <section class="panel">
-      <h2>Report Dashboard</h2>
-
-      <!-- 统计数字会在报告列表变化时重新计算。 -->
-      <div class="dashboard-top">
-        <div class="stat"><strong id="pendingCount">0</strong>Pending</div>
-        <div class="stat"><strong id="progressCount">0</strong>In Progress</div>
-        <div class="stat"><strong id="completedCount">0</strong>Completed</div>
-      </div>
-
-      <div class="workspace">
-        <div>
-          <h3>Reports</h3>
-          <div id="reportList" class="report-list"></div>
-        </div>
-
-        <aside>
-          <h3>Report Details</h3>
-          <div id="detailPanel" class="detail-empty">
-            Choose a report to see the details.
-          </div>
-        </aside>
-      </div>
     </section>
   </main>
 
   <script>
-    // 保存需要反复操作的页面元素，避免后面重复查找。
+    // Get page elements.
     const reportForm = document.getElementById("reportForm");
-    const reportList = document.getElementById("reportList");
-    const detailPanel = document.getElementById("detailPanel");
-    const errorBox = document.getElementById("errorBox");
-    const successBox = document.getElementById("successBox");
+    const errorMessage = document.getElementById("errorMessage");
+    const successMessage = document.getElementById("successMessage");
 
-    // 原型阶段先把报告存在数组里，刷新页面后数据不会保留。
-    // 这条初始数据用于测试非标准 location、issueType 和 priority 是否仍能显示。
-    let reports = [
-      {
-        id: 100,
-        studentName: "Steven He",
-        location: "ASIA",
-        issueType: "EMOTIONAL DAMAGE",
-        priority: "FAILER",
-        description: "WHY YOU NEED CALCULATOR? USE YOUR BRAIN, IT SHOULD GO RING RING!!!",
-        status: "Pending",
-        createdAt: "EMOTION_TEST"
+    // Show an error message.
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.style.display = "block";
+      successMessage.style.display = "none";
+    }
+
+    // Show the success message.
+    function showSuccess() {
+      errorMessage.style.display = "none";
+      successMessage.style.display = "block";
+    }
+
+    // Read the server error message.
+    async function getErrorMessage(response, fallbackMessage) {
+      try {
+        const data = await response.json();
+        return data.error || fallbackMessage;
+      } catch (error) {
+        return fallbackMessage;
       }
-    ];
-
-    let selectedReportId = null;
-
-    // 根据处理状态返回对应的 class 名称。
-    function getStatusClass(status) {
-      if (status === "Pending") return "pending";
-      if (status === "In Progress") return "progress";
-      return "completed";
     }
 
-    // 非标准 priority 默认按 high 处理，避免奇怪数据破坏显示。
-    function getPriorityClass(priority) {
-      if (priority === "Medium") return "medium";
-      if (priority === "Low") return "low";
-      return "high";
-    }
-
-    // 把用户输入当作普通文字显示，避免被浏览器当成 HTML 解析。
-    function escapeText(text) {
-      return String(text)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    // 根据单条报告数据生成列表中的一个可点击项目。
-    function createReportCard(report) {
-      const card = document.createElement("div");
-      card.className = "report-card";
-      if (report.id === selectedReportId) {
-        card.classList.add("active");
-      }
-
-      card.innerHTML = `
-        <div class="card-line">
-          <div>
-            <div class="report-title">#${report.id} ${escapeText(report.issueType)}</div>
-            <div class="meta">${escapeText(report.location)} - Priority: ${escapeText(report.priority)}</div>
-          </div>
-          <span class="badge ${getStatusClass(report.status)}">${report.status}</span>
-        </div>
-      `;
-
-      card.addEventListener("click", function () {
-        selectedReportId = report.id;
-        renderReports();
-        renderDetails(report.id);
-      });
-
-      return card;
-    }
-
-    // 根据 reports 数组重新渲染报告列表。
-    function renderReports() {
-      reportList.innerHTML = "";
-      reports.forEach(function (report) {
-        reportList.appendChild(createReportCard(report));
-      });
-      updateCounts();
-    }
-
-    // 统计不同状态的报告数量，并更新 dashboard。
-    function updateCounts() {
-      document.getElementById("pendingCount").textContent = reports.filter(report => report.status === "Pending").length;
-      document.getElementById("progressCount").textContent = reports.filter(report => report.status === "In Progress").length;
-      document.getElementById("completedCount").textContent = reports.filter(report => report.status === "Completed").length;
-    }
-
-    // 显示用户选中的报告详情。
-    function renderDetails(reportId) {
-      const report = reports.find(item => item.id === reportId);
-      if (!report) return;
-
-      detailPanel.className = "";
-      detailPanel.innerHTML = `
-        <div class="detail-grid">
-          <div class="detail-item"><small>Report ID</small>#${report.id}</div>
-          <div class="detail-item"><small>Student</small>${escapeText(report.studentName)}</div>
-          <div class="detail-item"><small>Location</small>${escapeText(report.location)}</div>
-          <div class="detail-item"><small>Issue Type</small>${escapeText(report.issueType)}</div>
-          <div class="detail-item"><small>Priority</small><span class="badge ${getPriorityClass(report.priority)}">${escapeText(report.priority)}</span></div>
-          <div class="detail-item"><small>Status</small><span class="badge ${getStatusClass(report.status)}">${report.status}</span></div>
-          <div class="detail-item"><small>Description</small>${escapeText(report.description)}</div>
-          <div class="detail-item"><small>Created</small>${escapeText(report.createdAt)}</div>
-        </div>
-        <div class="detail-actions">
-          <button class="btn btn-secondary" onclick="updateStatus(${report.id}, 'Pending')">Mark Pending</button>
-          <button class="btn btn-secondary" onclick="updateStatus(${report.id}, 'In Progress')">Mark In Progress</button>
-          <button class="btn btn-success" onclick="updateStatus(${report.id}, 'Completed')">Mark Completed</button>
-          <button class="btn btn-danger" onclick="deleteReport(${report.id})">Delete Report</button>
-        </div>
-        <div class="timeline">
-          <div><strong>Submitted:</strong> report details recorded.</div>
-          <div><strong>Review:</strong> staff checks the issue and evidence.</div>
-          <div><strong>Action:</strong> maintenance updates the report status.</div>
-        </div>
-      `;
-    }
-
-    // 修改报告状态后刷新列表和详情。
-    function updateStatus(reportId, newStatus) {
-      const report = reports.find(item => item.id === reportId);
-      if (!report) return;
-      report.status = newStatus;
-      renderReports();
-      renderDetails(reportId);
-    }
-
-    // 删除报告，并清空右侧详情区域。
-    function deleteReport(reportId) {
-      reports = reports.filter(report => report.id !== reportId);
-      selectedReportId = null;
-      detailPanel.className = "detail-empty";
-      detailPanel.textContent = "Choose a report to see the details.";
-      renderReports();
-    }
-
-    // 为新报告生成下一个可用编号。
-    function generateReportId() {
-      if (reports.length === 0) return 101;
-      return Math.max(...reports.map(report => report.id)) + 1;
-    }
-
-    // 处理表单提交：验证输入，并在通过后创建新报告。
-    reportForm.addEventListener("submit", function (event) {
+    // Send student report data to the database API.
+    reportForm.addEventListener("submit", async function (event) {
       event.preventDefault();
 
-      const studentName = document.getElementById("studentName").value.trim();
-      const location = document.getElementById("location").value;
-      const issueType = document.getElementById("issueType").value;
-      const priority = document.getElementById("priority").value;
-      const description = document.getElementById("description").value.trim();
+      const report = {
+        studentName: document.getElementById("studentName").value.trim(),
+        location: document.getElementById("location").value,
+        issueType: document.getElementById("issueType").value,
+        priority: document.getElementById("priority").value,
+        description: document.getElementById("description").value.trim()
+      };
 
-      // 基础验证：所有字段都必须填写。
-      if (!studentName || !location || !issueType || !priority || !description) {
-        errorBox.style.display = "block";
-        successBox.style.display = "none";
+      if (!report.studentName || !report.location || !report.issueType || !report.priority || !report.description) {
+        showError("Please complete all fields.");
         return;
       }
 
-      const newReport = {
-        id: generateReportId(),
-        studentName,
-        location,
-        issueType,
-        priority,
-        description,
-        status: "Pending",
-        createdAt: new Date().toLocaleString()
-      };
+      try {
+        const response = await fetch("/api/reports", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(report)
+        });
 
-      // 新报告放在列表最上方，并自动显示详情。
-      reports.unshift(newReport);
-      selectedReportId = newReport.id;
+        if (!response.ok) {
+          showError(await getErrorMessage(response, "The report could not be saved."));
+          return;
+        }
 
-      reportForm.reset();
-      errorBox.style.display = "none";
-      successBox.style.display = "block";
-      renderReports();
-      renderDetails(newReport.id);
+        reportForm.reset();
+        showSuccess();
+      } catch (error) {
+        showError("Could not connect to the server. Open the page from http://127.0.0.1:8000/student.");
+      }
     });
-
-    // 页面加载后先显示初始测试报告。
-    renderReports();
   </script>
 </body>
 </html>

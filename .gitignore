@@ -1,0 +1,19 @@
+# Local SQLite database files.
+reports.db
+reports.db-journal
+reports.db-shm
+reports.db-wal
+
+# Python cache files.
+__pycache__/
+*.pyc
+
+# Local editor and assistant folders.
+.vscode/
+.agents/
+
+# Microsoft Office lock files.
+.~lock.*
+
+# Local backup copies. These are kept on this computer only.
+docs/archive/
