@@ -119,12 +119,6 @@ school-report-system/
   START.bat
   OPEN_THIS.bat
   README.md
-  docs/
-    assessment-briefs/
-    evidence/
-    notes/
 ```
 
 The main prototype files stay in the project root so the launcher and server paths remain simple.
-
-The `docs/evidence` folder contains portfolio and testing evidence. The `docs/assessment-briefs` folder contains the assessment documents. Local backup copies are stored in `docs/archive`, but that folder is not uploaded to GitHub.

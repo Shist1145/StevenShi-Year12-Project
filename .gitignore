@@ -15,5 +15,5 @@ __pycache__/
 # Microsoft Office lock files.
 .~lock.*
 
-# Local backup copies. These are kept on this computer only.
-docs/archive/
+# Assessment documents. These are kept on this computer only.
+docs/
